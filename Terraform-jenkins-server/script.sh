@@ -23,7 +23,7 @@ sudo systemctl restart docker
 sudo chmod 777 /var/run/docker.sock
 
 # Run Docker Container of Sonarqube
-docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
+docker run -d --name sonar -p 9000:9000 sonarqube:lts-community --restart=always
 
 # Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
