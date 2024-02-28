@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapi-svc
+  namespace: emart
+spec:
+  type: ClusterIP
+  selector:
+    app: webapi
+  ports:
+  - port: 9000
+    targetPort: webapi-port
+    protocol: TCP

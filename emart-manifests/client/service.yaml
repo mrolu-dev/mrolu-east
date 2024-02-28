@@ -1,0 +1,14 @@
+# Frontend Client Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-svc
+  namespace: emart
+spec:
+  type: ClusterIP
+  selector:
+    app: client
+  ports:
+  - port: 4200
+    targetPort: client-port
+    protocol: TCP

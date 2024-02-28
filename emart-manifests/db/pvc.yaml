@@ -1,0 +1,27 @@
+# MySQL PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: emart
+spec:
+  storageClassName: gp2
+  resources:
+    requests:
+      storage: 500Mi
+  accessModes:
+    - ReadWriteMany
+
+---
+# MongoDB PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: emart
+  resources:
+    requests:
+      storage: 500Mi
+  accessModes:
+    - ReadWriteMany
+  storageClassName: gp2

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi
+  namespace: emart  
+  labels:
+    app: webapi
+spec:
+  imagePullSecrets:
+  - name: ecr-registry-secret  
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapi  
+  template:
+    metadata:
+      labels:
+        app: webapi
+    spec:
+      containers:
+        - name: webapi
+          image: 532739883212.dkr.ecr.us-west-2.amazonaws.com/webapi:24
+          imagePullPolicy: Always
+          ports:
+            - name: webapi-port
+              containerPort: 9000
+          env:
+          - name: MONGOURI
+            value: 'mongodb://mongodb:27017/epoc'
+          - name: SECRETORKEY
+            value: 'k1234e6s78h9av'

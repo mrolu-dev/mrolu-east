@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  namespace: emart
+  labels:
+    app: client
+spec:
+  selector:
+    matchLabels:
+      app: client
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: 532739883212.dkr.ecr.us-west-2.amazonaws.com/client:x
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4200
+          name: client-port

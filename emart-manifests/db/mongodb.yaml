@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: emart
+  labels:
+    app: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:4
+        ports:
+        - name: mongodb-port
+          containerPort: 27017
+        volumeMounts:
+         - name: mongodb-vol
+           mountPath: /data/db
+        env:
+        - name: MONGO_INITDB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: dbconfig
+              key: mongodbname
+      volumes:
+       - name: mongodb-vol
+         persistentVolumeClaim:
+           claimName: mongodb-pvc

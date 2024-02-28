@@ -12,9 +12,9 @@ terraform {
 
   backend "s3" {
 
-    bucket  = "laflortfstate"    //manually created 
+    bucket  = "lafloreast"    //manually created 
     key     = "jenkins/terraform.tfstate"
-    region  = "us-west-2"
+    region  = "us-east-1"
     encrypt = true
 
     # dynamodb_table = "Terraform_lock"   //manually created 

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: emart  
+  labels:
+    app: api
+spec:
+  imagePullSecrets:
+  - name: ecr-registry-secret  
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api  
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: 532739883212.dkr.ecr.us-west-2.amazonaws.com/api:x
+          imagePullPolicy: Always
+          ports:
+            - name: api-port
+              containerPort: 5000
