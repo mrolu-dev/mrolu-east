@@ -21,7 +21,7 @@ pipeline {
         
         stage('Checkout Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/mrolu-dev/mrolu'
+                git branch: 'main', url: 'https://github.com/mrolu-dev/mrolu-east'
             }
         }
         
