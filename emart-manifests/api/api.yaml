@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: 532739883212.dkr.ecr.us-west-2.amazonaws.com/api:x
+          image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/api:x
           imagePullPolicy: Always
           ports:
             - name: api-port
