@@ -1,0 +1,115 @@
+pipeline {
+    agent any
+    tools {
+        jdk 'jdk'
+        nodejs 'nodejs'
+    }
+    environment  {
+        SCANNER_HOME=tool 'sonar-scanner'
+        AWS_ACCOUNT_ID = credentials('aws-acct')
+        AWS_ECR_REPO_NAMES = ['adservice', 'cartservice', 'api','checkoutservice', 'client', 'currencyservice','emailservice', 'frontend', 'loadgenerator','paymentservice', 'productcatalogservice', 'webapi', 'recommendationservice', 'shippingservice']
+        AWS_DEFAULT_REGION = 'us-east-1'
+        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
+    }
+
+    stages {
+        stage('Clean WorkSpace') {
+            steps {
+                cleanWs()
+            }
+        }
+        
+        stage('Checkout Git') {
+            steps {
+                git branch: 'main', url: 'https://github.com/mrolu-dev/mrolu-east.git'
+            }
+        }
+        
+        stage('Loop Over Directories and Perform Stages') {
+            environment {
+                GIT_REPO_NAME = "mrolu-east"
+                GIT_USER_NAME = "mrolu-dev"
+            }            
+            steps {
+                script {
+                    for (AWS_ECR_REPO_NAME in AWS_ECR_REPO_NAMES) {
+                        def dir = "Application-Code/${AWS_ECR_REPO_NAME}"
+                        echo "Processing directory: ${dir}"
+                        
+                        // Check if source code contains .java files
+                        def javaFiles = sh(script: "find ${dir} -name '*.java'", returnStatus: true)
+                        if (javaFiles == 0) {
+                            // Sonarqube Analysis
+                            dir("${dir}") {
+                                withSonarQubeEnv('sonar-server') {
+                                    sh """ 
+                                        ${SCANNER_HOME}/bin/sonar-scanner \
+                                        -Dsonar.projectName=${AWS_ECR_REPO_NAME} \
+                                        -Dsonar.projectKey=${AWS_ECR_REPO_NAME}
+                                    """
+                                }
+                            }
+                            
+                            // Quality Check
+                            script {
+                                waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                            }
+                            
+                            // OWASP Dependency-Check Scan
+                            dir("${dir}") {
+                                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                            }
+                            
+                            // Trivy File Scan
+                            dir("${dir}") {
+                                sh "trivy fs . > ../../trivyfs-${AWS_ECR_REPO_NAME}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
+                            }
+                        }
+                        
+                        // Docker Image Build
+                        script {
+                            dir("${dir}") {
+                                sh """
+                                    docker system prune -f
+                                    docker container prune -f
+                                    docker build -t ${AWS_ECR_REPO_NAME} .
+                                """
+                            }
+                        }
+                        
+                        // Trivy Scan Image
+                        sh "trivy image ${AWS_ECR_REPO_NAME} > trivyimage-${AWS_ECR_REPO_NAME}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
+                        
+                        // ECR Image Pushing
+                        script {
+                            sh """
+                                aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+                                docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                                docker push ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                            """
+                        }
+                        
+                        // Update Deployment file
+                        dir("micro-manifests/${AWS_ECR_REPO_NAME}") {
+                            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                                sh '''
+                                    git config user.email "o.olumoyin@gmail.com"
+                                    git config user.name "Olu Olumoyin"
+                                    BUILD_NUMBER=${BUILD_NUMBER}
+                                    echo $BUILD_NUMBER
+                                    imageTag=$(grep -oP "(?<=${AWS_ECR_REPO_NAME}:)[^ ]+" deployment.yaml)
+                                    echo $imageTag
+                                    sed -i "s/${AWS_ECR_REPO_NAME}:${imageTag}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}/" deployment.yaml
+                                    git add deployment.yaml
+                                    git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
+                                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
