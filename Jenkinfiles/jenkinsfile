@@ -1,107 +1,114 @@
+def getRepoNames() {
+    return ['adservice', 'cartservice', 'api', 'checkoutservice', 'client', 'currencyservice', 'emailservice', 'frontend', 'loadgenerator', 'paymentservice', 'productcatalogservice', 'webapi', 'recommendationservice', 'shippingservice']
+}
+
 pipeline {
     agent any
     tools {
         jdk 'jdk'
         nodejs 'nodejs'
     }
-    environment  {
-        SCANNER_HOME=tool 'sonar-scanner'
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
         AWS_ACCOUNT_ID = credentials('aws-acct')
-        AWS_ECR_REPO_NAMES = ['adservice', 'cartservice', 'api','checkoutservice', 'client', 'currencyservice','emailservice', 'frontend', 'loadgenerator','paymentservice', 'productcatalogservice', 'webapi', 'recommendationservice', 'shippingservice']
         AWS_DEFAULT_REGION = 'us-east-1'
         REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
     }
 
     stages {
-        stage('Clean WorkSpace') {
+        stage('Clean Workspace') {
             steps {
                 cleanWs()
             }
         }
-        
+
         stage('Checkout Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/mrolu-dev/mrolu-east.git'
+                git branch: 'main', credentialsId: 'github-token', url: 'https://github.com/mrolu-dev/mrolu-east'
             }
         }
-        
+
         stage('Loop Over Directories and Perform Stages') {
             environment {
-                GIT_REPO_NAME = "mrolu-east"
+                GIT_REPO_NAME = "mrolu"
                 GIT_USER_NAME = "mrolu-dev"
-            }            
+            }
             steps {
                 script {
-                    for (AWS_ECR_REPO_NAME in AWS_ECR_REPO_NAMES) {
-                        def dir = "Application-Code/${AWS_ECR_REPO_NAME}"
-                        echo "Processing directory: ${dir}"
-                        
+                    for (repoName in getRepoNames()) {
+                        echo "Processing repository: ${repoName}"
+
+                        def dirPath = "Application-Code/${repoName}"
+
                         // Check if source code contains .java files
-                        def javaFiles = sh(script: "find ${dir} -name '*.java'", returnStatus: true)
-                        if (javaFiles == 0) {
-                            // Sonarqube Analysis
-                            dir("${dir}") {
-                                withSonarQubeEnv('sonar-server') {
-                                    sh """ 
-                                        ${SCANNER_HOME}/bin/sonar-scanner \
-                                        -Dsonar.projectName=${AWS_ECR_REPO_NAME} \
-                                        -Dsonar.projectKey=${AWS_ECR_REPO_NAME}
-                                    """
-                                }
-                            }
-                            
-                            // Quality Check
-                            script {
-                                waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
-                            }
-                            
-                            // OWASP Dependency-Check Scan
-                            dir("${dir}") {
-                                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
-                                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-                            }
-                            
-                            // Trivy File Scan
-                            dir("${dir}") {
-                                sh "trivy fs . > ../../trivyfs-${AWS_ECR_REPO_NAME}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
-                            }
+                        def javaFiles = sh(script: "find ${dirPath} -name '*.java'", returnStatus: true)
+                        if (javaFiles != 0) {
+                            echo "Skipping SonarQube analysis, quality check, OWASP, and Trivy scan for ${repoName} due to Java files"
+                            continue
                         }
-                        
-                        // Docker Image Build
-                        script {
-                            dir("${dir}") {
-                                sh """
-                                    docker system prune -f
-                                    docker container prune -f
-                                    docker build -t ${AWS_ECR_REPO_NAME} .
+
+                        // Sonarqube Analysis
+                        dir(dirPath) {
+                            withSonarQubeEnv('sonar-server') {
+                                sh """ 
+                                    ${SCANNER_HOME}/bin/sonar-scanner \
+                                    -Dsonar.projectName=${repoName} \
+                                    -Dsonar.projectKey=${repoName}
                                 """
                             }
                         }
-                        
+
+                        // Quality Check
+                        script {
+                            waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                        }
+
+                        // OWASP Dependency-Check Scan
+                        dir(dirPath) {
+                            dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                            dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                        }
+
+                        // Trivy File Scan
+                        dir(dirPath) {
+                            sh "trivy fs . > ../../trivyfs-${repoName}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
+                        }
+
+                        // Docker Image Build
+                        script {
+                            dir(dirPath) {
+                                sh """
+                                    docker system prune -f
+                                    docker container prune -f
+                                    docker build -t ${repoName} .
+                                """
+                            }
+                        }
+
                         // Trivy Scan Image
-                        sh "trivy image ${AWS_ECR_REPO_NAME} > trivyimage-${AWS_ECR_REPO_NAME}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
-                        
+                        sh "trivy image ${repoName} > trivyimage-${repoName}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
+
                         // ECR Image Pushing
                         script {
                             sh """
                                 aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-                                docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
-                                docker push ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                                docker tag ${repoName} ${REPOSITORY_URI}${repoName}:${BUILD_NUMBER}
+                                docker push ${REPOSITORY_URI}${repoName}:${BUILD_NUMBER}
                             """
                         }
-                        
+
                         // Update Deployment file
-                        dir("micro-manifests/${AWS_ECR_REPO_NAME}") {
+                        dir("micro-manifests/${repoName}") {
                             withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                                 sh '''
                                     git config user.email "o.olumoyin@gmail.com"
                                     git config user.name "Olu Olumoyin"
                                     BUILD_NUMBER=${BUILD_NUMBER}
                                     echo $BUILD_NUMBER
-                                    imageTag=$(grep -oP "(?<=${AWS_ECR_REPO_NAME}:)[^ ]+" deployment.yaml)
+                                    imageTag=$(grep -oP "(?<=${repoName}:)[^ ]+" ${repoName}.yaml)
                                     echo $imageTag
-                                    sed -i "s/${AWS_ECR_REPO_NAME}:${imageTag}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}/" deployment.yaml
-                                    git add deployment.yaml
+                                    sed -i "s/${repoName}:${imageTag}/${repoName}:${BUILD_NUMBER}/" ${repoName}.yaml
+                                    git add ${repoName}.yaml
                                     git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
                                     git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
                                 '''
