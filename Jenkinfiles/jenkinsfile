@@ -30,7 +30,7 @@ pipeline {
 
         stage('Loop Over Directories and Perform Stages') {
             environment {
-                GIT_REPO_NAME = "mrolu"
+                GIT_REPO_NAME = "mrolu-east"
                 GIT_USER_NAME = "mrolu-dev"
             }
             steps {
