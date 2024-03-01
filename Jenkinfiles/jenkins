@@ -1,0 +1,187 @@
+def getRepoNames() {
+    return ['adservice', 'cartservice', 'api', 'checkoutservice', 'client', 'currencyservice', 'emailservice', 'frontend', 'loadgenerator', 'paymentservice', 'productcatalogservice', 'webapi', 'recommendationservice', 'shippingservice']
+}
+
+pipeline {
+    agent any
+    tools {
+        jdk 'jdk'
+        nodejs 'nodejs'
+    }
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+        AWS_ACCOUNT_ID = credentials('aws-acct')
+        AWS_DEFAULT_REGION = 'us-east-1'
+        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
+    }
+
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout Git') {
+            steps {
+                git branch: 'main', credentialsId: 'github-token', url: 'https://github.com/mrolu-dev/mrolu-east'
+            }
+        }
+
+        stage('Loop Over Directories and Perform Stages') {
+            environment {
+                GIT_REPO_NAME = "mrolu-east"
+                GIT_USER_NAME = "mrolu-dev"
+            }
+            steps {
+                script {
+                    for (repoName in getRepoNames()) {
+                        echo "Processing repository: ${repoName}"
+
+                        def dirPath = "Application-Code/${repoName}"
+
+                        // Check if source code contains .java files
+                        def javaFiles = sh(script: "find ${dirPath} -type f -name '*.java'", returnStatus: true)
+                        if (javaFiles != 0) {
+                            // Path 1: Java Source Code
+                            path1Steps(repoName, dirPath)
+                        } else {
+                            // Path 2: Non-Java Source Code
+                            path2Steps(repoName, dirPath)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def path1Steps(repoName, dirPath) {
+    // Docker Image Build
+    dockerImageBuild(repoName, dirPath)
+    
+    // Sonarqube Analysis
+    sonarqubeAnalysis(repoName, dirPath)
+
+    // Quality Check
+    qualityCheck()
+
+    // OWASP Dependency-Check Scan
+    owaspDependencyCheck(dirPath)
+
+    // Trivy File Scan
+    trivyFileScan(repoName, dirPath)
+
+    // Trivy Scan Image
+    trivyScanImage(repoName)
+
+    // ECR Image Pushing
+    ecrImagePushing(repoName)
+
+    // Update Deployment file
+    updateDeploymentFile(repoName)
+}
+
+def path2Steps(repoName, dirPath) {
+    // Sonarqube Analysis
+    sonarqubeAnalysis(repoName, dirPath)
+
+    // Quality Check
+    qualityCheck()
+
+    // OWASP Dependency-Check Scan
+    owaspDependencyCheck(dirPath)
+
+    // Trivy File Scan
+    trivyFileScan(repoName, dirPath)
+
+    // Docker Image Build
+    dockerImageBuild(repoName, dirPath)
+
+    // Trivy Scan Image
+    trivyScanImage(repoName)
+
+    // ECR Image Pushing
+    ecrImagePushing(repoName)
+
+    // Update Deployment file
+    updateDeploymentFile(repoName)
+}
+
+def dockerImageBuild(repoName, dirPath) {
+    script {
+        dir(dirPath) {
+            sh """
+                docker system prune -f
+                docker container prune -f
+                docker build -t ${repoName} .
+            """
+        }
+    }
+}
+
+def sonarqubeAnalysis(repoName, dirPath) {
+    dir(dirPath) {
+        withSonarQubeEnv('sonar-server') {
+            sh """ 
+                ${SCANNER_HOME}/bin/sonar-scanner \
+                -Dsonar.projectName=${repoName} \
+                -Dsonar.projectKey=${repoName} \
+                -Dsonar.sources=src \
+                -Dsonar.java.binaries=.
+            """
+        }
+    }
+}
+
+def qualityCheck() {
+    script {
+        waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+    }
+}
+
+def owaspDependencyCheck(dirPath) {
+    dir(dirPath) {
+        dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
+
+def trivyFileScan(repoName, dirPath) {
+    dir(dirPath) {
+        sh "trivy fs . > ../../trivyfs-${repoName}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
+    }
+}
+
+def trivyScanImage(repoName) {
+    sh "trivy image ${repoName} > trivyimage-${repoName}-job-${BUILD_NUMBER}-${BUILD_ID}.txt"
+}
+
+def ecrImagePushing(repoName) {
+    script {
+        sh """
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+            docker tag ${repoName} ${REPOSITORY_URI}${repoName}:${BUILD_NUMBER}
+            docker push ${REPOSITORY_URI}${repoName}:${BUILD_NUMBER}
+        """
+    }
+}
+
+def updateDeploymentFile(repoName) {
+    dir("micro-manifests/${repoName}") {
+        withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+            sh """
+                git config user.email "o.olumoyin@gmail.com"
+                git config user.name "Olu Olumoyin"
+                BUILD_NUMBER=${BUILD_NUMBER}
+                echo \$BUILD_NUMBER
+                imageTag=\$(grep -oP "(?<=${repoName}:)[^ ]+" ${repoName}.yaml)
+                echo \$imageTag
+                sed -i "s/${repoName}:\${imageTag}/${repoName}:\$BUILD_NUMBER/" ${repoName}.yaml
+                git add ${repoName}.yaml
+                git commit -m "Update deployment Image to version \$BUILD_NUMBER"
+                git push https://\${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+            """
+        }
+    }
+}
