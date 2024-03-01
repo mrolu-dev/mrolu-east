@@ -3,7 +3,7 @@ plugins {
     id 'com.github.sherter.google-java-format' version '0.9'
     id 'idea'
     id 'application'
-    id "org.sonarqube" version "4.4.1.3373"
+    id "org.sonarqube" version "5.0.1.3006"
     id 'java'
 }
 
