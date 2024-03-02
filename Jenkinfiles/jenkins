@@ -110,12 +110,24 @@ def path2Steps(repoName, dirPath) {
 
 def dockerImageBuild(repoName, dirPath) {
     script {
-        dir(dirPath) {
+        def dockerfilePath = sh(script: "find ${dirPath} -maxdepth 1 -type f -name Dockerfile", returnStdout: true).trim()
+
+        if (!dockerfilePath) {
+            dockerfilePath = sh(script: "find ${dirPath}/src -maxdepth 1 -type f -name Dockerfile", returnStdout: true).trim()
+        }
+
+        if (dockerfilePath) {
+            dockerfilePath = dockerfilePath.replaceAll("\n", "").trim()
+            def dockerfileDir = dockerfilePath.replaceAll("/Dockerfile", "")
+
             sh """
+                cd ${dockerfileDir}
                 docker system prune -f
                 docker container prune -f
                 docker build -t ${repoName} .
             """
+        } else {
+            echo "Dockerfile not found in directory: ${dirPath} or ${dirPath}/src"
         }
     }
 }
