@@ -91,7 +91,7 @@ pipeline {
 
         stage('Update Deployment file') {
             environment {
-                GIT_REPO_NAME = "mrolu"
+                GIT_REPO_NAME = "mrolu-east"
                 GIT_USER_NAME = "mrolu-dev"
             }
         steps {

@@ -21,13 +21,10 @@ pipeline {
         
         stage('Checkout Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/mrolu-dev/mrolu'
+                git branch: 'main', url: 'https://github.com/mrolu-dev/mrolu-east'
             }
         }
-        
-        
-        
-         stage("Docker Image Build") {
+        stage("Docker Image Build") {
             steps {
                 script {
                     dir('Application-Code/webapi') {
@@ -37,7 +34,49 @@ pipeline {
                     }
                 }
             }
+        } 
+        stage('Sonarqube-Analysis') {
+            steps {
+                dir('Application-Code/webapi') {
+                withSonarQubeEnv('sonar-server') {
+                    sh ''' 
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=webapi \
+                        -Dsonar.projectKey=webapi \
+                        -Dsonar.sources=src \
+                        -Dsonar.java.binaries=.
+                    '''
+                 }
+              }
+            }
         }
+        
+        stage('Quality Check') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                }
+            }
+        }
+        
+       stage('OWASP Dependency-Check Scan') {
+            steps {
+                dir('Application-Code/webapi') {
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
+        
+        stage('Trivy File Scan') {
+            steps {
+                dir('Application-Code/webapi') {
+                    sh 'trivy fs . > ../../trivyfs-webapi-job-${BUILD_NUMBER}-${BUILD_ID}.txt'
+                }
+            }
+        }
+        
+        
         stage ("Trivy Scan Image"){
             steps {
                 sh 'trivy image ${AWS_ECR_REPO_NAME} > trivyimage-webapi-job-${BUILD_NUMBER}-${BUILD_ID}.txt'
@@ -56,11 +95,11 @@ pipeline {
 
         stage('Update Deployment file') {
             environment {
-                GIT_REPO_NAME = "mrolu"
+                GIT_REPO_NAME = "mrolu-east"
                 GIT_USER_NAME = "mrolu-dev"
             }
         steps {
-            dir('emart-manifests/webapi') {
+            dir('micro-manifests/webapi') {
                 withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                     sh '''
                         git config user.email "o.olumoyin@gmail.com"
@@ -80,18 +119,6 @@ pipeline {
 
         }
     }
-    post {
-    always {
-        script {
-            emailext attachLog: true,
-                subject: "'${currentBuild.result}'",
-                body: "Project: ${env.JOB_NAME}<br/>" +
-                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
-                    "URL: ${env.BUILD_URL}<br/>",
-                to: 'o.olumoyin@gmail.com',  
-                attachmentsPattern: 'trivyfs-webapi-job-*.txt , trivyimage-webapi-job-*.txt'
-        }
-    }
-}
+    
 
 }
