@@ -1,5 +1,5 @@
 def getRepoNames() {
-    return ['adservice', 'cartservice', 'api', 'checkoutservice', 'client', 'currencyservice', 'emailservice', 'frontend', 'loadgenerator', 'paymentservice', 'productcatalogservice', 'webapi', 'recommendationservice', 'shippingservice']
+    return ['adservice', 'cartservice',  'checkoutservice', 'client', 'currencyservice', 'emailservice', 'frontend', 'loadgenerator', 'paymentservice', 'productcatalogservice',  'recommendationservice', 'shippingservice', 'webapi','api',]
 }
 
 pipeline {
@@ -84,7 +84,7 @@ def path1Steps(repoName, dirPath) {
 
 def path2Steps(repoName, dirPath) {
     // Sonarqube Analysis
-    sonarqubeAnalysis(repoName, dirPath)
+    sonarqubeAnalysis2(repoName, dirPath)
 
     // Quality Check
     qualityCheck()
@@ -141,6 +141,19 @@ def sonarqubeAnalysis(repoName, dirPath) {
                 -Dsonar.projectKey=${repoName} \
                 -Dsonar.sources=src \
                 -Dsonar.java.binaries=.
+            """
+        }
+    }
+}
+
+def sonarqubeAnalysis2(repoName, dirPath) {
+    dir(dirPath) {
+        withSonarQubeEnv('sonar-server') {
+            sh """ 
+                ${SCANNER_HOME}/bin/sonar-scanner \
+                -Dsonar.projectName=${repoName} \
+                -Dsonar.projectKey=${repoName} 
+
             """
         }
     }
