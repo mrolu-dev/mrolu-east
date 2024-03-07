@@ -12,3 +12,6 @@ Eclipse Temurin Installer
 NodeJS
 Email Extension Plugin
 Prometheus metrics plugin
+
+
+To be updated

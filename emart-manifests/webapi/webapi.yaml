@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: webapi
-          image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/webapi:3
+          image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/webapi:2
           imagePullPolicy: Always
           ports:
             - name: webapi-port
