@@ -99,7 +99,7 @@ pipeline {
                 GIT_USER_NAME = "mrolu-dev"
             }
         steps {
-            dir('micro-manifests/webapi') {
+            dir('emart-manifests/webapi') {
                 withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                     sh '''
                         git config user.email "o.olumoyin@gmail.com"
@@ -119,6 +119,20 @@ pipeline {
 
         }
     }
+post {
+    always {
+        script {
+            emailext attachLog: true,
+                subject: "'${currentBuild.result}'",
+                body: "Project: ${env.JOB_NAME}<br/>" +
+                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                    "URL: ${env.BUILD_URL}<br/>",
+                to: 'o.olumoyin@gmail.com',  
+                attachmentsPattern: 'trivyfs-webapi-job-*.txt , trivyimage-webapi-job-*.txt'
+        }
+    }
+}
+
     
 
 }

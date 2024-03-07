@@ -125,8 +125,9 @@ pipeline {
                     "URL: ${env.BUILD_URL}<br/>",
                 to: 'o.olumoyin@gmail.com',  
                 attachmentsPattern: 'trivyfs-cartservice-job-*.txt , trivyimage-cartservice-job-*.txt'
+            }
         }
     }
 }
 
-}
+ 
