@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: client
-        image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/client:x
+        image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/client:1
         imagePullPolicy: Always
         ports:
         - containerPort: 4200
