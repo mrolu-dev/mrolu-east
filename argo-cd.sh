@@ -1,5 +1,5 @@
 #!/bin/bash
-#  aws eks --region us-east-1 update-kubeconfig --name mrolu-eks-P967gvJj
+#  aws eks --region us-east-1 update-kubeconfig --name mrolu-eks-Yo2vbr72
 
 NAMESPACE=argo-cd
 RELEASE_NAME=argo

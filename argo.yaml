@@ -1,0 +1,66 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microservices
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mrolu-dev/mrolu-east
+    targetRevision: HEAD
+    directory:
+      recurse: true
+      jsonnet: {}
+    paths:
+      - micro-manifests/adservice
+      - micro-manifests/cartservice
+      - micro-manifests/other-service
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: micro
+  syncPolicy:
+    automated: {}
+---
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: emart
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mrolu-dev/mrolu-east
+    targetRevision: HEAD
+    directory:
+      recurse: true
+      jsonnet: {}
+    paths:
+      - emart-manifests/client
+      - emart-manifests/api
+      - emart-manifests/webapi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: emart
+  syncPolicy:
+    automated: {}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microservices
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mrolu-dev/mrolu-east
+    targetRevision: HEAD
+    directory:
+      recurse: true
+      jsonnet: {}
+    paths:
+      - wordpress-manifests/wordpress
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated: {}
