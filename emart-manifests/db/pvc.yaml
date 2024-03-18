@@ -5,13 +5,11 @@ metadata:
   name: mysql-pvc
   namespace: emart
 spec:
-  storageClassName: gp2  # change appropriately
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi
-  accessModes:
-    - ReadWriteMany
-
+      storage: 20Gi
 ---
 # MongoDB PVC
 apiVersion: v1
@@ -20,9 +18,8 @@ metadata:
   name: emongo-pvc
   namespace: emart
 spec:
-  storageClassName: gp2  # change appropriately
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi
-  accessModes:
-    - ReadWriteMany
+      storage: 20Gi
