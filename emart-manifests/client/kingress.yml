@@ -1,5 +1,5 @@
 # Ingress for frontend
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-client
@@ -29,7 +29,7 @@ spec:
 
 ---
 # Ingress for backend
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-backend
