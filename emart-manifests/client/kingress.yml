@@ -7,8 +7,8 @@ metadata:
   labels:
     name: client
   annotations:
-    kubernetes.io/ingress.class: "nginx"
-    ingress.kubernetes.io/rewrite-target: "/"
+ 
+    ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
