@@ -6,6 +6,9 @@ metadata:
   namespace: emart   # Add the 'namespace' field here
   labels:
     name: client
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/rewrite-target: "/"
 spec:
   ingressClassName: nginx
   rules:
@@ -19,20 +22,6 @@ spec:
             name: client-svc
             port:
               number: 4200
-
----
-# Ingress for backend
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ingress-backend
-  namespace: emart   # Add the 'namespace' field here
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: localhost
-    http:
-      paths:
       - pathType: Prefix
         path: "/api"
         backend:
