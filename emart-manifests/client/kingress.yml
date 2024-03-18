@@ -1,0 +1,49 @@
+# Ingress for frontend
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-frontend
+  namespace: emart   # Add the 'namespace' field here
+  labels:
+    name: emartclient
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/home"
+        backend:
+          service:
+            name: client-svc
+            port:
+              number: 4200
+
+---
+# Ingress for backend
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-backend
+  namespace: dev   # Add the 'namespace' field here
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/api"
+        backend:
+          service:
+            name: api-svc
+            port:
+              number: 5000
+      - pathType: Prefix
+        path: "/webapi"
+        backend:
+          service:
+            name: webapi-svc
+            port:
+              number: 9000
