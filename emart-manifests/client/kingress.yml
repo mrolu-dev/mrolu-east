@@ -9,11 +9,11 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: localhost
+  - host: http://acf2bb1427ae04a93b7dcb17ca2e3aea-0680fd822f467183.elb.us-east-1.amazonaws.com
     http:
       paths:
       - pathType: Prefix
-        path: "/"
+        path: "/emart"
         backend:
           service:
             name: client-svc
@@ -30,7 +30,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: localhost
+  - host: http://acf2bb1427ae04a93b7dcb17ca2e3aea-0680fd822f467183.elb.us-east-1.amazonaws.com
     http:
       paths:
       - pathType: Prefix
