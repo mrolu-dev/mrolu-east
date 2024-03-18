@@ -44,21 +44,17 @@ spec:
   syncPolicy:
     automated: {}
 ---
+# application.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: microservices
+  name: wordpress
 spec:
   project: default
   source:
     repoURL: https://github.com/mrolu-dev/mrolu-east
     targetRevision: HEAD
-    directory:
-      recurse: true
-      jsonnet: {}
-    paths:
-      - wordpress-manifests/wordpress
-
+    path: wordpress-manifests/wordpress/kustomization.yaml # Path to your kustomization.yaml file in the repository
   destination:
     server: https://kubernetes.default.svc
     namespace: default
