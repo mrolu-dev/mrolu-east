@@ -5,7 +5,7 @@ metadata:
   name: ingress-frontend
   namespace: emart   # Add the 'namespace' field here
   labels:
-    name: emartclient
+    name: client
 spec:
   ingressClassName: nginx
   rules:
