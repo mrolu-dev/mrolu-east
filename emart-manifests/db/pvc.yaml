@@ -5,7 +5,7 @@ metadata:
   name: mysql-pvc
   namespace: emart
 spec:
-  storageClassName: hostpath  # change appropriately
+  storageClassName: gp2  # change appropriately
   resources:
     requests:
       storage: 500Mi
@@ -20,7 +20,7 @@ metadata:
   name: emongo-pvc
   namespace: emart
 spec:
-  storageClassName: hostpath  # change appropriately
+  storageClassName: gp2  # change appropriately
   resources:
     requests:
       storage: 500Mi
