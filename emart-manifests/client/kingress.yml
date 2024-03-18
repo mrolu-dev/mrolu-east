@@ -26,7 +26,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-backend
-  namespace: dev   # Add the 'namespace' field here
+  namespace: emart   # Add the 'namespace' field here
 spec:
   ingressClassName: nginx
   rules:
