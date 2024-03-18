@@ -44,7 +44,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/paymentservice:2
+        image: 532739883212.dkr.ecr.us-west-2.amazonaws.com/paymentservice:4
         ports:
         - containerPort: 50051
         env:
