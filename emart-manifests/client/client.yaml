@@ -15,10 +15,19 @@ spec:
       labels:
         app: client
     spec:
+      imagePullSecrets:
+      - name: dev-aws-ecr-us-east-1   
       containers:
       - name: client
-        image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/client:2
+        image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/client:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 4200
           name: client-port
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

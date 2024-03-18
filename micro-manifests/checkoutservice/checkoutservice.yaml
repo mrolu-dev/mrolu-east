@@ -43,7 +43,11 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
+<<<<<<< HEAD
           image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/checkoutservice:2
+=======
+          image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/checkoutservice:3
+>>>>>>> 93ace3883abfe5d039353568b6de394700e095dd
           ports:
           - containerPort: 5050
           readinessProbe:

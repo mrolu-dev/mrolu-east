@@ -7,3 +7,5 @@
 *.tfstate.*
 
 # .tfvars files
+argo-pass.txt
+

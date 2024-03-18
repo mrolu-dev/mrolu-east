@@ -2,8 +2,11 @@
 
 NAMESPACE=monitoring
 RELEASE_NAME=prometheus-community
+CLUSTER_NAME=mrolu-eks-Yo2vbr72  # add your cluster name here
+# Check if the cluster is running and ready
+status=$(aws eks describe-cluster --region us-east-1 --name $CLUSTER_NAME --query "cluster.status" --output text 2>/dev/null)
 
-if ./create-eks.sh && [ $? -eq 0 ]; then
+if [ "$status" = "ACTIVE" ]; then 
    echo " !!! Eks is Ready !!! "
 
    echo " Create Monitoring namespace "
@@ -12,7 +15,7 @@ if ./create-eks.sh && [ $? -eq 0 ]; then
    echo " Deploy prometheus on eks "
    helm repo add ${RELEASE_NAME} https://prometheus-community.github.io/helm-charts
    helm repo update
-   helm install prometheus ${RELEASE_NAME}/kube-prometheus-stack
+   helm install prometheus ${RELEASE_NAME}/kube-prometheus-stack --namespace ${NAMESPACE} --set alertmanager.persistentVolume.storageClass="gp2" --set server.persistentVolume.storageClass="gp2"
 
    echo " Wait Pods to Start "
    sleep 2m

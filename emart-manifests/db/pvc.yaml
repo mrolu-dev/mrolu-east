@@ -5,7 +5,7 @@ metadata:
   name: mysql-pvc
   namespace: emart
 spec:
-  storageClassName: gp2
+  storageClassName: hostpath  # change appropriately
   resources:
     requests:
       storage: 500Mi
@@ -17,11 +17,12 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mongodb-pvc
+  name: emongo-pvc
   namespace: emart
+spec:
+  storageClassName: hostpath  # change appropriately
   resources:
     requests:
       storage: 500Mi
   accessModes:
     - ReadWriteMany
-  storageClassName: gp2

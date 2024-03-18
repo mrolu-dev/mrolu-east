@@ -6,8 +6,6 @@ metadata:
   labels:
     app: webapi
 spec:
-  imagePullSecrets:
-  - name: ecr-registry-secret  
   replicas: 1
   selector:
     matchLabels:
@@ -17,15 +15,25 @@ spec:
       labels:
         app: webapi
     spec:
+      imagePullSecrets:
+      - name: dev-aws-ecr-us-east-1     
       containers:
         - name: webapi
-          image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/webapi:2
+          image: 532739883212.dkr.ecr.us-east-1.amazonaws.com/webapi:v1
           imagePullPolicy: Always
           ports:
             - name: webapi-port
               containerPort: 9000
           env:
           - name: MONGOURI
-            value: 'mongodb://mongodb:27017/epoc'
+            value: 'mongodb://emongo:27017/epoc'
           - name: SECRETORKEY
             value: 'k1234e6s78h9av'
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+   

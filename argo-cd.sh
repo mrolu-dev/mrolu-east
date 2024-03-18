@@ -3,11 +3,11 @@
 
 NAMESPACE=argo-cd
 RELEASE_NAME=argo
-CLUSTER_NAME=mrolu-eks-P967gvJj  # add your cluster name here
+CLUSTER_NAME=mrolu-eks-Yo2vbr72  # add your cluster name here
 # Check if the cluster is running and ready
 status=$(aws eks describe-cluster --region us-east-1 --name $CLUSTER_NAME --query "cluster.status" --output text 2>/dev/null)
 
-if [ "$status" = "ACTIVE" ]; then                                #./create-eks.sh && [ $? -eq 0 ]; then
+if [ "$status" = "ACTIVE" ]; then                               
    echo " !!! Eks is Ready !!! "
 
    echo " Create Argo-cd namespace "
