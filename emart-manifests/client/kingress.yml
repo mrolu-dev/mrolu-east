@@ -1,5 +1,5 @@
 # Ingress for frontend
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-frontend
@@ -9,7 +9,7 @@ metadata:
   annotations:
     ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: internal
+
   rules:
   - host: localhost
     http:
