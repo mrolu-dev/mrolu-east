@@ -5,13 +5,12 @@ metadata:
   name: client-svc
   namespace: emart
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: client
   ports:
   - port: 4200
-    targetPort: client-port
-    protocol: TCP
+ 
 
 # apiVersion: v1
 # kind: Service
